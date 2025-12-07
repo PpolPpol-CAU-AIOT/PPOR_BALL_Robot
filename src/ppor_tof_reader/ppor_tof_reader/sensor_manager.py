@@ -38,8 +38,8 @@ class EwmaFilter:
 
 class ToFSensorManager:
     def __init__(self, gpio_map, address_map):
-        self.gpio_map = gpio_map        # {"front":17, "left":27, "right":22}
-        self.address_map = address_map  # {"front":0x30, "left":0x31, "right":0x32}
+        self.gpio_map = gpio_map        # {"front":17, "left":27, "right":22, "back" : 23}
+        self.address_map = address_map  # {"front":0x30, "left":0x31, "right":0x32, "back":0x33}
 
         self.chip = lgpio.gpiochip_open(0)
         self.i2c = busio.I2C(board.SCL, board.SDA)
@@ -53,6 +53,7 @@ class ToFSensorManager:
             "front": EwmaFilter(alpha=0.3),
             "left": EwmaFilter(alpha=0.3),
             "right": EwmaFilter(alpha=0.3),
+            "back" : EwmaFilter(alpha=0.3),
         }
         self.init_all_sensors()
 
@@ -127,10 +128,11 @@ class ToFSensorManager:
         print("│ front :       │")
         print("│ left  :       │")
         print("│ right :       │")
+        print("│ back  :       │")
         print("└──────────────────────────────┘")
     
     def update_value(self, row, text):
-        y = row + 4   # 값이 들어가는 줄: 박스 기준 4, 5, 6
+        y = row + 4   # 값이 들어가는 줄: 박스 기준 4, 5, 6, 7
         x = 12        # 값 위치 조절
         print(f"\033[{y};{x}H{text:8}", end="")
 
@@ -138,6 +140,7 @@ class ToFSensorManager:
         self.update_value(0, f"{data['front']:.2f}" if data['front'] else "---")
         self.update_value(1, f"{data['left']:.2f}"  if data['left'] else "---")
         self.update_value(2, f"{data['right']:.2f}" if data['right'] else "---")
+        self.update_value(3, f"{data['back']:.2f}"  if data['back'] else "---")
         print("", end="", flush=True)
 
         """

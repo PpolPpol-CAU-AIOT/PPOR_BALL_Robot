@@ -11,14 +11,14 @@ class ToFReaderNode(Node):
             "front": 17,
             "left": 27,
             "right": 22,
-            #"back": 23,
+            "back": 23,
         }
 
         address_map = {
             "front": 0x30,
             "left": 0x31,
             "right": 0x32,
-            #"back": 0x33,
+            "back": 0x33,
         }
 
         # 센서 초기화
@@ -29,7 +29,7 @@ class ToFReaderNode(Node):
             "front": self.create_publisher(Range, "/tof/front", 10),
             "left": self.create_publisher(Range, "/tof/left", 10),
             "right": self.create_publisher(Range, "/tof/right", 10),
-            #"back": self.create_publisher(Range, "/tof/back", 10),
+            "back": self.create_publisher(Range, "/tof/back", 10),
         }
 
         # 50ms 마다 콜백 실행
