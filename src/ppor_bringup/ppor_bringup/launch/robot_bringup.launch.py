@@ -20,11 +20,6 @@ def generate_launch_description():
             }],
         ),
         Node(
-            package="ppor_tof_scan",
-            executable="tof_scan_node",
-            name="tof_scan",
-        ),
-        Node(
             package="ppor_app_bridge",
             executable="app_bridge_node",
             name="app_bridge",
@@ -43,6 +38,17 @@ def generate_launch_description():
             executable="tof_reader",
             name="tof_reader",
             output="screen",
+        ),
+        Node(
+            package="ppor_imu_reader",
+            executable="imu_yaw_node",
+            name="imu_yaw_node",
+        ),
+
+        Node(
+            package="ppor_rotate_mapper",
+            executable="rotate_mapper",
+            name="rotate_mapper",
         ),
         # 나중에 slam_toolbox, robot_state_publisher 등 추가
     ])
