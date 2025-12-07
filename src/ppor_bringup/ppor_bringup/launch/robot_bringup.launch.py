@@ -50,5 +50,10 @@ def generate_launch_description():
             executable="rotate_mapper",
             name="rotate_mapper",
         ),
+        Node(
+            package="ppor_supervisor",
+            executable="supervisor",
+            name="supervisor",
+        ),
         # 나중에 slam_toolbox, robot_state_publisher 등 추가
     ])

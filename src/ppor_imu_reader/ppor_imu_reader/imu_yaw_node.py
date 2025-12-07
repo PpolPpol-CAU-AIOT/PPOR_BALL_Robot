@@ -40,7 +40,11 @@ class MPU9250Gyro:
         raw = self.read_word(GYRO_ZOUT_H)
         # ±250 dps -> sensitivity 131 LSB/(°/s)
         dps = raw / 131.0
-        return dps - self.bias_z
+        dsp -= self.bias_z
+
+        if abs(dps) < 0.1:
+            dps= 0.0
+        return dps
 
     def calibrate_bias(self, samples=500):
         print("[IMU] Calibrating gyro bias...")
