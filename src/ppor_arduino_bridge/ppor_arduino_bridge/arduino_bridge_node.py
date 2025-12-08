@@ -6,9 +6,6 @@ from geometry_msgs.msg import Twist
 import serial
 import re
 
-ODOM_PATTERN = re.compile(
-    r"<ODOM,L:(?P<L>-?\d+),R:(?P<R>-?\d+),Y:(?P<Y>-?\d+\.?\d*),D:(?P<D>\d+)>"
-)
 
 class ArduinoBridgeNode(Node):
     def __init__(self):
@@ -21,77 +18,118 @@ class ArduinoBridgeNode(Node):
             self.ser = serial.Serial(port, baudrate=baud, timeout=0.01)
             self.serial_connected = True
         except Exception as e:
-            self.get_logger().warn(
-                f"Failed to open serial port {port} @ {baud}: {e}"
-            )
+            self.get_logger().error(f"[ArduinoBridge] Serial open failed: {e}")
             self.serial_connected = False
             self.ser = None
 
-        self.pub_left = self.create_publisher(Int32, "/wheel/left_ticks", 10)
-        self.pub_right = self.create_publisher(Int32, "/wheel/right_ticks", 10)
-        self.pub_yaw = self.create_publisher(Float32, "/imu/yaw", 10)
-        self.pub_front = self.create_publisher(Range, "/tof/front", 10)
+        self.wheel_base = 0.12
 
-        self.cmd_sub = self.create_subscription(Twist, "/cmd_vel", self.cmd_vel_callback, 10)
+        self.cmd_sub = self.create_subscription(
+            Twist, "/cmd_vel", self.cmd_vel_callback, 10
+        )
 
-        self.timer = self.create_timer(0.01, self.read_serial)
-
-        self.front_frame = self.declare_parameter("front_frame", "tof_front").get_parameter_value().string_value
-
-    def read_serial(self):
-        if not self.serial_connected:
-            return
-        try:
-            line = self.ser.readline().decode(errors="ignore").strip()
-        except Exception as e:
-            self.get_logger().warn(f"Serial read error: {e}")
-            return
-
-        if not line:
-            return
-
-        match = ODOM_PATTERN.match(line)
-        if not match:
-            return
-
-        left = int(match.group("L"))
-        right = int(match.group("R"))
-        yaw = float(match.group("Y"))
-        dist_mm = int(match.group("D"))
-
-        msg_l = Int32()
-        msg_l.data = left
-        self.pub_left.publish(msg_l)
-
-        msg_r = Int32()
-        msg_r.data = right
-        self.pub_right.publish(msg_r)
-
-        msg_y = Float32()
-        msg_y.data = yaw
-        self.pub_yaw.publish(msg_y)
-
-        front_msg = Range()
-        front_msg.header.stamp = self.get_clock().now().to_msg()
-        front_msg.header.frame_id = self.front_frame
-        front_msg.radiation_type = Range.INFRARED
-        front_msg.field_of_view = 0.05
-        front_msg.min_range = 0.02
-        front_msg.max_range = 2.0
-        front_msg.range = dist_mm / 1000.0
-        self.pub_front.publish(front_msg)
 
     def cmd_vel_callback(self, msg: Twist):
         if not self.serial_connected:
             return
-        lin = msg.linear.x
-        ang = msg.angular.z
-        cmd_str = f"<CMD,LIN:{lin:.3f},ANG:{ang:.3f}>\n"
-        try:
-            self.ser.write(cmd_str.encode())
-        except Exception as e:
-            self.get_logger().warn(f"Serial write error: {e}")
 
+        v = msg.linear.x          # m/s
+        w = msg.angular.z         # rad/s
+        h = msg.linear.z
+        W = self.wheel_base
+
+        # differential drive
+        left = v - (w * (W / 2))
+        right = v + (w * (W / 2))
+
+        # scale to -100 ~ +100 percent
+        max_speed = 0.20  # 최대 물리 속도(m/s), 너 로봇에 맞게 조정 가능
+
+        left_percent = int(max(min(left / max_speed * 100, 100), -100))
+        right_percent = int(max(min(right / max_speed * 100, 100), -100))
+
+        h_percent = int(max(min(h * 100, 100), -100))
+
+        # format: R100,L80,
+        cmd = f"R{right_percent},L{left_percent},H{h_percent},"
+
+        try:
+            self.ser.write(cmd.encode())
+        except Exception as e:
+            self.get_logger().warn(f"[ArduinoBridge] Serial write error: {e}")
+
+def manual_cmd_cb(self, msg: String):
+    cmd = msg.data
+    self.get_logger().info(f"[MANUAL] Received manual command: {cmd}")
+
+    t = Twist()
+
+    # ============================
+    # 즉시 manual 제어로 전환
+    # 모든 NAV FSM 정지
+    # ============================
+    self.nav_active = False
+    self.state = "IDLE"
+
+    if cmd == "front":
+        t.linear.x = self.linear_speed
+
+    elif cmd == "back":
+        t.linear.x = -self.linear_speed
+
+    elif cmd == "left":
+        t.angular.z = self.angular_speed
+
+    elif cmd == "right":
+        t.angular.z = -self.angular_speed
+
+    elif cmd == "stop":
+        self.stop()
+        return
+
+    elif cmd == "dance":
+        self.get_logger().info("[MANUAL] Starting DANCE MODE")
+        import time
+
+        for _ in range(2):
+            # Left rotate
+            t = Twist()
+            t.angular.z = self.angular_speed
+            self.cmd_pub.publish(t)
+            time.sleep(0.5)
+
+            # Right rotate
+            t = Twist()
+            t.angular.z = -self.angular_speed
+            self.cmd_pub.publish(t)
+            time.sleep(0.5)
+
+            # Forward
+            t = Twist()
+            t.linear.x = self.linear_speed
+            self.cmd_pub.publish(t)
+            time.sleep(0.4)
+
+            # Backward
+            t = Twist()
+            t.linear.x = -self.linear_speed
+            self.cmd_pub.publish(t)
+            time.sleep(0.4)
+
+            t = Twist()
+            t.linear.z = 1.0   # H +100%
+            self.cmd_pub.publish(t)
+            time.sleep(0.4)
+
+            t = Twist()
+            t.linear.z = -1.0  # H -100%
+            self.cmd_pub.publish(t)
+            time.sleep(0.4)
+
+        self.stop()
+        return
+
+    self.cmd_pub.publish(t)
 
 def main(args=None):
     rclpy.init(args=args)

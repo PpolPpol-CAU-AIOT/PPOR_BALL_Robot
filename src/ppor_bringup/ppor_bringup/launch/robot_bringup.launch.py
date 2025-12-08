@@ -10,28 +10,9 @@ def generate_launch_description():
             parameters=[{"port": "/dev/ttyUSB0", "baudrate": 115200}],
         ),
         Node(
-            package="ppor_wheel_odom",
-            executable="wheel_odom_node",
-            name="wheel_odom",
-            parameters=[{
-                "wheel_radius": 0.03,
-                "wheel_base": 0.15,
-                "ticks_per_rev": 1024,
-            }],
-        ),
-        Node(
             package="ppor_app_bridge",
             executable="app_bridge_node",
             name="app_bridge",
-        ),
-        Node(
-            package="slam_toolbox",
-            executable="sync_slam_toolbox_node",
-            name="slam_toolbox",
-            output="screen",
-            parameters=[{
-                "use_sim_time": False
-            }],
         ),
         Node(
             package="ppor_tof_reader",

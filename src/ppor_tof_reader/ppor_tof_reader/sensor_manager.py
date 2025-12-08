@@ -57,10 +57,6 @@ class ToFSensorManager:
         }
         self.init_all_sensors()
 
-    def _write_reg(self, addr, reg, val):
-        self.bus.write_byte_data(addr, reg, val)
-
-
     def init_all_sensors(self):
         # 모두 끄기
         for pin in self.gpio_map.values():
