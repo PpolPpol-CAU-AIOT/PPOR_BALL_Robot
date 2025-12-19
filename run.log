@@ -1,0 +1,26 @@
+[Arduino] Opening /dev/ttyUSB0 ...
+[Arduino] Connected.
+[IMU] Calibrating gyro Z bias...
+[IMU] Bias Z = -0.926 dps
+[INFO] VL53L0X 초기화 시작…
+
+[INIT] front 부팅, GPIO 19 → 0x30
+[FAIL] front: 기본 주소(0x29) 접근 실패 → No I2C device at address: 0x29
+
+[INIT] left 부팅, GPIO 20 → 0x31
+[FAIL] left: 기본 주소(0x29) 접근 실패 → No I2C device at address: 0x29
+
+[INIT] right 부팅, GPIO 16 → 0x32
+[OK] right: 기본 주소(0x29) 접근 성공
+[OK] right: 주소 변경 성공 → 0x32
+[OK] right 초기화 완료 → 0x32
+
+[INIT] back 부팅, GPIO 26 → 0x33
+[OK] back: 기본 주소(0x29) 접근 성공
+[OK] back: 주소 변경 성공 → 0x33
+[OK] back 초기화 완료 → 0x33
+
+[INFO] 모든 센서 초기화 완료.
+
+[MAP] loaded 6 walls
+[MQTT] Connecting to 172.30.1.65:8080 ...
